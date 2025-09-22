@@ -1,0 +1,912 @@
+<?php
+
+
+
+use Illuminate\Support\Facades\Route;
+
+use Illuminate\Support\Facades\Cache;
+
+use Illuminate\Support\Facades\DB;
+
+use App\Models\v1\StockIndicator;
+
+if(isset($_GET['hello'])){
+   
+    //require __DIR__ . '/../routes/api.php';
+}
+//require __DIR__ . '/api.php';
+
+// Disable this because we don't need it.
+
+Route::get('/', function () {
+
+    return view('welcome');
+
+});
+
+Route::get('/v1/missing-score',function(){
+    
+    $stocks = DB::table('stock_symbols')
+                ->where('priority','=',1)
+                ->get()->toArray();
+    
+    $scores = DB::table('stock_trading_score')
+                ->get()->toArray();
+    
+    $symbols_array = array();
+    foreach( $scores as $score ) {
+        $symbols_array[] = $score->symbol;
+    }
+  
+    $missing = array();
+    
+    foreach( $stocks as $stock ) {
+        if (!in_array($stock->symbol,$symbols_array)){
+            $missing[] = $stock->symbol;
+        }
+    }
+    
+    echo '<pre>';
+    print_r($missing);
+    echo '</pre>';
+});
+
+
+
+// Indicator test
+
+Route::get('/v1/indicators',function(){
+
+
+
+    // Fetch the last updated timestamp from the database
+
+    $lastUpdated = DB::table('stock_indicators')
+
+        ->orderBy('updated_at', 'desc')
+
+        ->value('updated_at'); // Assumes the table has an `updated_at` column
+
+
+
+    // Create a unique cache key based on the last updated timestamp
+
+    $cacheKey = 'stock_indicators_' . $lastUpdated;
+
+
+
+    // Cache
+
+    $response_obj = Cache::remember($cacheKey, 60, function () {
+
+        return DB::select('
+
+            SELECT si.*, ss.symbol 
+
+            FROM stock_indicators si 
+
+            INNER JOIN stock_symbols ss ON si.stock_id = ss.id
+
+        ');
+
+    });
+
+    
+
+    $stockIndicators = json_decode(json_encode($response_obj), true);
+
+
+
+    echo '<!DOCTYPE html>
+
+            <html lang="en">
+
+            <head>
+
+                <meta charset="UTF-8">
+
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+                <title>Technical Indicators</title>
+
+                <style>
+
+                    table {
+
+                        width: 100%;
+
+                        border-collapse: collapse;
+
+                        margin-top: 20px;
+
+                    }
+
+                    th, td {
+
+                        border: 1px solid #ddd;
+
+                        padding: 8px;
+
+                        text-align: left;
+
+                    }
+
+                    th {
+
+                        background-color: #f4f4f4;
+
+                    }
+
+                    tr:nth-child(even) {
+
+                        background-color: #f9f9f9;
+
+                    }
+
+                    tr:hover {
+
+                        background-color: #f1f1f1;
+
+                    }
+
+                </style>
+
+            </head>
+
+            <body>';
+
+    echo '<h1>Technical Indicators</h1>';
+
+    echo '<table>';
+
+    echo '<thead>
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>SYMBOL</th>
+
+                <th>EMA 50</th>
+
+                <th>EMA 200</th>
+
+                <th>MACD</th>
+
+                <th>MACD SIGNAL LINE</th>
+
+                <th>RSI</th>
+
+                <th>AROON UP</th>
+
+                <th>AROON DOWN</th>
+
+                <th>CCI</th>
+
+                <th>PRICE</th>
+
+                <th>MARKET SENTIMENTS</th>
+
+            </tr>';
+
+    echo '<tbody>';
+
+    foreach( $stockIndicators as $key=>$indicator ) {
+
+
+
+        $id = $stockIndicators[$key]['id'];
+
+        $symbol = $stockIndicators[$key]['symbol'];
+
+        $ema_50 = $stockIndicators[$key]['ema_50'];
+
+        $ema_200 = $stockIndicators[$key]['ema_200'];
+
+        $macd = $stockIndicators[$key]['macd'];
+
+        $macd_signal_line = $stockIndicators[$key]['macd_signal_line'];
+
+        $rsi = $stockIndicators[$key]['rsi'];
+
+        $aroon_up = $stockIndicators[$key]['aroon_up'];
+
+        $aroon_down = $stockIndicators[$key]['aroon_down'];
+
+        $cci = $stockIndicators[$key]['cci'];
+
+        $price = $stockIndicators[$key]['price'];
+
+        $bullishBearish = $stockIndicators[$key]['bullish'] ? 'Bullish' : ($stockIndicators[$key]['bearish'] ? 'Bearish' : 'Neutral');
+
+
+
+        echo '<tr>';
+
+        echo '<td>'.$id.'</td>';
+
+        echo '<td>'.$symbol.'</td>';
+
+        echo '<td>'.$ema_50.'</td>';
+
+        echo '<td>'.$ema_200.'</td>';
+
+        echo '<td>'.$macd.'</td>';
+
+        echo '<td>'.$macd_signal_line.'</td>';
+
+        echo '<td>'.$rsi.'</td>';
+
+        echo '<td>'.$aroon_up.'</td>';
+
+        echo '<td>'.$aroon_down.'</td>';
+
+        echo '<td>'.$cci.'</td>';
+
+        echo '<td>'.$price.'</td>';
+
+        echo '<td>'.$bullishBearish.'</td>';
+
+        echo '</tr>';
+
+
+
+
+
+    }
+
+    echo '</tbody>';
+
+    echo '</table>';
+
+    echo '</body>
+
+    <script>
+
+        setInterval(() => {
+
+            location.reload();
+
+        }, 60000); // Reloads every 60 seconds
+
+    </script>
+
+        </html>';
+
+});
+
+
+
+/**
+
+ * Required Controllers
+
+ */
+
+use App\Http\Controllers\v1\StockController;
+
+use App\Http\Controllers\v1\IndicatorController;
+
+use App\Http\Controllers\v1\BasicFinancialController;
+
+use App\Http\Controllers\v1\CompanyNewsController;
+
+use App\Http\Controllers\v1\PriceMetricController;
+
+use App\Http\Controllers\v1\PriceTargetController;
+
+use App\Http\Controllers\v1\StockQuoteController;
+
+use App\Http\Controllers\v1\StockCandleController;
+
+use App\Http\Controllers\v1\StockInsiderController;
+
+use App\Http\Controllers\v1\StockSentimentController;
+
+use App\Http\Controllers\v1\StockSocialSentimentController;
+
+use App\Http\Controllers\v1\StockUpgradeDowngradeController;
+
+use App\Http\Controllers\v1\StockEarningsCalendarController;
+
+use App\Http\Controllers\v1\StockEconomicController;
+
+use App\Http\Controllers\v1\InstitutionalOwnershipController;
+
+use App\Http\Controllers\v1\InstitutionalPortfolioController;
+
+use App\Http\Controllers\v1\StockSectorMetricsController;
+
+
+
+use App\Http\Controllers\endpoints\v1\QuoteController as EndpointQuote;
+
+use App\Http\Controllers\endpoints\v1\BasicFinancialController as EndpointBasicFinancial;
+
+use App\Http\Controllers\endpoints\v1\StockPriceTargetController as EndpointStockPriceTarget;
+
+use App\Http\Controllers\endpoints\v1\StockCandleDailyController as EndpointStockCandleDaily;
+
+use App\Http\Controllers\endpoints\v1\StockEconomicCalendarController as EndpointStockEconomicCalendar;
+
+use App\Http\Controllers\endpoints\v1\StockEarningsCalendarController as EndpointStockEarningsCalendar;
+
+use App\Http\Controllers\endpoints\v1\StockSocialSentimentController as EndpointStockSocialSentiment;
+
+use App\Http\Controllers\endpoints\v1\StockUpgradeDowngradeController as EndpointStockUpgradeDowngrade;
+
+use App\Http\Controllers\endpoints\v1\InstitutionalOwnershipController as EndpointInstitutionalOwnership;
+
+use App\Http\Controllers\endpoints\v1\StockBasicFinancialMetricController as EndpointStockBasicFinancialMetric;
+
+use App\Http\Controllers\endpoints\v1\StockRecommendationController as EndpointStockRecommendation;
+
+use App\Http\Controllers\endpoints\v1\StockNewsSentimentController as EndpointStockNewsSentiment;
+
+use App\Http\Controllers\endpoints\v1\StockCompanyNewsController as EndpointStockCompanyNews;
+
+use App\Http\Controllers\endpoints\v1\StockInsiderController as EndpointStockInsider;
+
+
+
+use App\Models\v1\Stock as StockModel;
+
+
+
+if(isset($_GET['gp'])){
+
+
+
+$symbols = StockModel::getStockSymbolsWithInfo()->pluck('symbol')->toArray();
+
+
+
+echo '<pre>';
+
+print_r($symbols);
+
+echo '</pre>';
+
+die();
+
+foreach($symbols as $symbol){
+
+    
+
+    StockModel::updatePriorityBySymbol($symbol);
+
+}
+
+die();
+
+}
+
+
+
+use App\Models\v1\StockIndicator as SI;
+
+Route::get('/v1/getduplicates',function(){
+
+    
+
+    $duplicates = SI::removeDuplicateStockIds();
+
+   
+
+    die();
+
+});
+
+
+
+/**
+
+ * Pull data from API service and save into the database.
+
+ * @version 1
+
+ */
+
+Route::get('/v1/pull_stocks_from_api', [StockController::class, 'getStockSymbols']);
+
+
+
+// Batch API calls
+
+Route::get('/v1/pull_stock_info_from_api_batch', [StockController::class, 'getStockSymbolProfilesBatch']);
+
+Route::get('/v1/pull_stocks_basic_financial_metric_batch', [BasicFinancialController::class, 'getBasicFinancialMetricBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stocks_candlestick_daily_batch', [StockCandleController::class, 'getCandleStickDailyBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stocks_candlestick_weekly_batch', [StockCandleController::class, 'getCandleStickWeeklyBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stocks_candlestick_monthly_batch', [StockCandleController::class, 'getCandleStickMonthlyBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_company_news_batch', [CompanyNewsController::class, 'getCompanyNewsBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_price_metric_batch', [PriceMetricController::class, 'getPriceMetricBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_price_target_batch', [PriceTargetController::class, 'getPriceTargetBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_insider_transaction_batch', [StockInsiderController::class, 'getStockInsiderBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_quote_batch', [StockQuoteController::class, 'getStockQuoteBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_news_sentiments_batch', [StockSentimentController::class, 'getSentimentsBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_market_cap_batch', [StockController::class, 'getStockMarketCapBatch']); // Multiple API calls
+
+Route::get('/v1/pull_stock_social_sentiments_batch',[StockSocialSentimentController::class,'getSocialSentimentsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_upgrade_downgrade_batch',[StockUpgradeDowngradeController::class,'getStockUpgradeDowngradeBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_earnings_calendar_batch',[StockEarningsCalendarController::class,'getStockEarningsCalendarBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_economic_calendar_batch',[StockEconomicController::class,'getStockEconomicCalendarBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_institutional_ownership_batch',[InstitutionalOwnershipController::class,'getInstitutionalOwnershipBatch']);
+
+Route::get('/v1/pull_stock_institutional_portfolio_batch',[InstitutionalPortfolioController::class,'getInstitutionalPortfolioBatch']);
+
+
+
+Route::get('/v1/pull_stock_market_cap_bulk', [StockController::class, 'getStockMarketCapBulk']);
+
+
+
+//Route::get('/v1/pull_stocks_candlestick_daily_batch', [StockCandleController::class, 'getCandleStickDailyBatch']); // Multiple API calls
+
+//Route::get('/v1/pull_stocks_candlestick_weekly_batch', [StockCandleController::class, 'getCandleStickWeeklyBatch']); // Multiple API calls
+
+//Route::get('/v1/pull_stocks_candlestick_monthly_batch', [StockCandleController::class, 'getCandleStickMonthlyBatch']); // Multiple API calls
+
+
+
+
+
+// Batch API calls indicators
+
+Route::get('/v1/pull_stock_indicators_batch/{indicator}',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+/**Route::get('/v1/pull_stock_indicators_batch/ema200',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/macd',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/macdSignal',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/rsi',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/aroonUp',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/aroonDown',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/cci',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/price',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/bullish',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+Route::get('/v1/pull_stock_indicators_batch/bearish',[IndicatorController::class,'pullStockIndicatorsBatch']); // Multiple API Calls
+
+**/
+
+// Single API calls
+
+Route::get('/v1/pull_stock_info_from_api_single/{symbol}', [StockController::class, 'getStockSymbolProfile']);
+
+Route::get('/v1/pull_stock_market_cap_from_api_single/{symbol}', [StockController::class, 'getStockMarketCap']); // This will run 1 API call
+
+Route::get('/v1/pull_stock_indicators_single/{symbol}',[IndicatorController::class,'getStockIndicatorsSingle']); // This will run 9 API calls
+
+Route::get('/v1/pull_stock_basic_financial_metric_single/{symbol}',[BasicFinancialController::class,'getBasicFinancialMetric']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_company_news_single/{symbol}',[CompanyNewsController::class,'getCompanyNews']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_price_metric_single/{symbol}',[PriceMetricController::class,'getPriceMetric']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_price_target_single/{symbol}',[PriceTargetController::class,'getPriceTarget']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_quote_single/{symbol}',[StockQuoteController::class,'getStockQuote']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_candlestick_daily_single/{symbol}',[StockCandleController::class,'getCandleStickDaily']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_candlestick_weekly_single/{symbol}',[StockCandleController::class,'getCandleStickWeekly']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_candlestick_monthly_single/{symbol}',[StockCandleController::class,'getCandleStickMonthly']); // This will run 1 API calls
+
+Route::get('/v1/pull_stock_insider_transaction_single/{symbol}',[StockInsiderController::class,'getStockInsider']);
+
+Route::get('/v1/pull_stock_news_sentiments_single/{symbol}',[StockSentimentController::class,'getSentiments']);
+
+Route::get('/v1/pull_stock_social_sentiments_single/{symbol}',[StockSocialSentimentController::class,'getSocialSentiments']);
+
+Route::get('/v1/pull_stock_upgrade_downgrade_single/{symbol}',[StockUpgradeDowngradeController::class,'getStockUpgradeDowngrade']);
+
+Route::get('/v1/pull_stock_earnings_calendar_single/{symbol}',[StockEarningsCalendarController::class,'getStockEarningsCalendar']);
+
+Route::get('/v1/pull_stock_economic_calendar_single/{symbol}',[StockEconomicController::class,'getStockEconomicCalendar']);
+
+Route::get('/v1/pull_stock_sector_metrics', [StockSectorMetricsController::class, 'getStockSectorMetics']);
+
+
+
+// Charlie's Routes
+
+use App\Http\Controllers\v1\StockDividendQuarterlyController;
+
+Route::get('/v1/pull_stock_dividend_batch', [StockDividendQuarterlyController::class, 'getStockDividendQuarterly']);
+
+
+
+use App\Http\Controllers\v1\StockRecommendationController;
+
+Route::get('/v1/pull_stock_recommendation_batch', [StockRecommendationController::class, 'getStockRecommendationBatch']);
+
+
+
+use App\Http\Controllers\v1\StockCompanyEarningsQualityScoreController;
+
+Route::get('/v1/pull_stock_earnings_quality_score_batch', [StockCompanyEarningsQualityScoreController::class, 'getStockCompanyEarningsQualityScore']);
+
+
+
+
+
+
+
+use App\Http\Controllers\endpoints\v1\StockScreenerController;
+
+use App\Http\Controllers\endpoints\v1\StockUnlimitedScreenerController;
+
+
+
+Route::get('/v1/screener', [StockScreenerController::class, 'getScreenerResult']);
+
+Route::get('/v1/sscreener', [StockUnlimitedScreenerController::class, 'getScreenerResult']);
+
+
+
+Route::get('/v1/trigger-stocks-batch-1', function () {
+
+    // For security, you might add a secret token as a query parameter
+
+    if (request('token') !== env('STOCKS_BATCH_TOKEN')) {
+
+        abort(403, 'Unauthorized');
+
+    }
+
+
+
+    // Option 1: Dispatch a job or call your logic directly.
+
+    // You could call your command logic here, for example:
+
+    \Artisan::call('stocks:batch');
+
+    
+
+    return response('Stocks batch triggered', 200);
+
+});
+
+
+
+Route::get('/v1/trigger-stocks-batch-2', function () {
+
+    // For security, you might add a secret token as a query parameter
+
+    if (request('token') !== env('STOCKS_BATCH_TOKEN')) {
+
+        abort(403, 'Unauthorized');
+
+    }
+
+
+
+    // Option 1: Dispatch a job or call your logic directly.
+
+    // You could call your command logic here, for example:
+
+    \Artisan::call('stocks:batch2');
+
+    
+
+    return response('Stocks batch triggered', 200);
+
+});
+
+
+
+Route::get('/v1/trigger-stocks-batch-3', function () {
+
+    // For security, you might add a secret token as a query parameter
+
+    if (request('token') !== env('STOCKS_BATCH_TOKEN')) {
+
+        abort(403, 'Unauthorized');
+
+    }
+
+
+
+    // Option 1: Dispatch a job or call your logic directly.
+
+    // You could call your command logic here, for example:
+
+    \Artisan::call('stocks:batch3');
+
+    
+
+    return response('Stocks batch triggered', 200);
+
+});
+
+
+
+Route::get('/v1/trigger-stocks-batch-4', function () {
+
+    // For security, you might add a secret token as a query parameter
+
+    if (request('token') !== env('STOCKS_BATCH_TOKEN')) {
+
+        abort(403, 'Unauthorized');
+
+    }
+
+
+
+    // Option 1: Dispatch a job or call your logic directly.
+
+    // You could call your command logic here, for example:
+
+    \Artisan::call('stocks:batch4');
+
+    
+
+    return response('Stocks batch triggered', 200);
+
+});
+
+
+Route::get('/v1/trigger-stocks-batch-5', function () {
+
+    // For security, you might add a secret token as a query parameter
+
+    if (request('token') !== env('STOCKS_BATCH_TOKEN')) {
+
+        abort(403, 'Unauthorized');
+
+    }
+
+
+
+    // Option 1: Dispatch a job or call your logic directly.
+
+    // You could call your command logic here, for example:
+
+    \Artisan::call('stocks:batch5');
+
+    
+
+    return response('Stocks batch triggered', 200);
+
+});
+
+
+// ENDPOINTS 
+
+Route::get('/v1/get_quote/{symbol}',[EndpointQuote::class,'getAllStockQuotes']);
+
+Route::get('/v1/get_basic_financial/{symbol}',[EndpointBasicFinancial::class,'getAllBasicFinancialMetrics']);
+
+Route::get('/v1/get_basic_financial_metric/{symbol}',[EndpointStockBasicFinancialMetric::class,'getAllBasicFinancialMetrics']);
+
+
+
+
+
+Route::get('/v1/get_price_target/{symbol}',[EndpointStockPriceTarget::class,'getPriceTargetBySymbol']);
+
+//Route::get('/v1/get_price_target_all',[EndpointStockPriceTarget::class,'getAllPriceTargets']);
+
+
+
+
+
+Route::get('/v1/get_candlesticks_daily/{symbol}',[EndpointStockCandleDaily::class,'getAllStockCandleDaily']);
+
+
+
+Route::get('/v1/get_economic_calendar_single/{symbol}',[EndpointStockEconomicCalendar::class,'getAllEconomicCalendarBySymbol']);
+
+Route::get('/v1/get_economic_calendar_all', [EndpointStockEconomicCalendar::class, 'getAllEconomicCalendar']);
+
+
+
+Route::get('/v1/get_stock_social_sentiment_all', [EndpointStockSocialSentiment::class, 'getAllStockSocialSentiments']);
+
+Route::get('/v1/get_stock_social_sentiment_single/{symbol}', [EndpointStockSocialSentiment::class, 'getSocialSentimentBySymbol']);
+
+
+
+Route::get('/v1/get_earnings_calendar_single/{symbol}', [EndpointStockEarningsCalendar::class, 'getAllEarningsCalendarBySymbol']);
+
+Route::get('/v1/get_earnings_calendar_all', [EndpointStockEarningsCalendar::class, 'getAllEarningsCalendar']);
+
+
+
+
+
+Route::get('/v1/get_stock_recommendation_single/{symbol}', [EndpointStockRecommendation::class, 'getStockRecommendationBySymbol']);
+
+Route::get('/v1/get_stock_recommendation_all', [EndpointStockRecommendation::class, 'getAllStockRecommendations']);
+
+
+
+
+
+Route::get('/v1/get_upgrade_downgrade_single/{symbol}', [EndpointStockUpgradeDowngrade::class, 'getUpgradeDowngradeBySymbol']);
+
+Route::get('/v1/get_upgrade_downgrade_all', [EndpointStockUpgradeDowngrade::class, 'getAllUpgradeDowngrades']);
+
+
+
+//Route::get('/v1/pull_stock_institutional_ownership_batch', [InstitutionalOwnershipController::class, 'getInstitutionalOwnershipBatch']);
+
+//Route::get('/v1/pull_stock_institutional_ownership_single/{symbol}', [InstitutionalOwnershipController::class, 'getInstitutionalOwnership']);
+
+
+
+Route::get('/v1/get_institutional_ownership_single/{symbol}', [EndpointInstitutionalOwnership::class, 'getInstitutionalOwnershipBySymbol']);
+
+Route::get('/v1/get_institutional_ownership_all', [EndpointInstitutionalOwnership::class, 'getAllInstitutionalOwnership']);
+
+
+
+Route::get('/v1/get_insider_single/{symbol}', [EndpointStockInsider::class, 'getInsiderBySymbol']);
+
+Route::get('/v1/get_insider_all', [EndpointStockInsider::class, 'getAllInsiders']);
+
+
+
+Route::get('/v1/get_all_us_stocks',function(){
+
+    $stocks = StockModel::stockSymbols();
+
+    echo '<pre>';
+
+    print_r($stocks);
+
+    echo '</pre>';
+
+});
+
+
+
+use Illuminate\Support\Facades\Http;
+
+
+
+Route::get('/v1/get_cci/',function(){
+
+    $stocks = StockModel::getStockSymbolsWithInfo()->pluck('symbol')->toArray();
+
+    $idx = 1;
+
+    foreach($stocks as $stock){
+
+        
+
+        $currentDayTimestamp = strtotime('today midnight');
+
+
+
+        $params = [
+
+            'symbol' => $stock,
+
+            'token' => 'ctukd71r01qg98tdggqgctukd71r01qg98tdggr0',
+
+            'from' => strtotime('-5 year', $currentDayTimestamp),
+
+            'to' => $currentDayTimestamp,
+
+            'indicator' => 'cci',
+
+            'resolution' => 'D',
+
+            'seriestype' => 'c',
+
+            'timeperiod' => 50,
+
+        ];
+
+
+
+        try {
+
+            //$response = Http::timeout(20)->get( 'https://finnhub.io/api/v1/stock/candle', $params);
+
+
+
+            //if ($response->successful()) {
+
+                //$res_array = $response->json();
+
+                //$cci = end($res_array['cci']);
+
+                echo $idx.' '.$stock.'<br>';
+
+                $idx++;
+
+            //}
+
+        } catch (\Exception $e) {
+
+            Log::error("Exception occurred while fetching {$indicator} data for {$symbol}: {$e->getMessage()}");
+
+            return null;
+
+        }
+
+    }
+
+    
+
+});
+
+
+
+use App\Http\Controllers\endpoints\v1\StockEconomicCalendarController;
+
+
+
+Route::get('/v1/get_economic_calendar_single/{symbol}',[StockEconomicCalendarController::class,'getAllEconomicCalendar']);
+
+
+
+Route::get('/v1/get_news_sentiment_single/{symbol}', [EndpointStockNewsSentiment::class, 'getNewsSentimentBySymbol']);
+
+Route::get('/v1/get_news_sentiment_all', [EndpointStockNewsSentiment::class, 'getAllNewsSentiments']);
+
+
+
+Route::get('/v1/get_company_news_single/{symbol}', [EndpointStockCompanyNews::class, 'getCompanyNewsBySymbol']);
+
+Route::get('/v1/get_company_news_all', [EndpointStockCompanyNews::class, 'getAllCompanyNews']);
+
+use App\Http\Controllers\v1\StockTradingScoreController;
+
+//Route::post('api/v1/send_article', [StockIncomingArticlesController::class, 'sendArticle']);
+
+
+Route::get('/v1/dividends',function(){
+    
+    $dividends = DB::table('stock_dividend_quarterly')
+                ->get()->toArray();
+    
+    return response()->json($dividends);
+    
+});
+
+
+
+// For example, in a routes file (routes/web.php or routes/api.php)
+Route::get('/v1/stocks_scoring', [StockTradingScoreController::class,'processStockTradingScore']);
+
+Route::get('/v1/scoring',function(){
+    
+    $scores = DB::table('stock_trading_score')
+                ->limit(2000)
+                ->get()->toArray();
+    
+    return response()->json($scores);
+    
+});
+
+
+
+
+

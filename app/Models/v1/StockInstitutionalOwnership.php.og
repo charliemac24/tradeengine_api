@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Models\v1;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class StockInstitutionalOwnership extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'stock_institutional_ownership';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'stock_id',
+        'change',
+        'cik',
+        'name',
+        'noVoting',
+        'percentage',
+        'putCall',
+        'share',
+        'sharedVoting',
+        'soleVoting',
+        'value',
+        'from',
+        'to'
+    ];
+
+    /**
+     * Insert or update stock institutional ownership at stock_institutional_ownership table.
+     *
+     * @param int $stockId
+     * @param array $data
+     * @return bool
+     */
+    public static function updateStockInstitutionalOwnership(int $stockId, array $data): bool
+    {
+        return (bool) self::updateOrCreate(
+            [
+                'stock_id' => $stockId,
+                'cik' => $data['cik'],
+                'from' => $data['from'],
+                'to' => $data['to']
+            ], // search criteria
+            [
+                'change' => $data['change'],
+                'name' => $data['name'],
+                'noVoting' => $data['noVoting'],
+                'percentage' => $data['percentage'],
+                'putCall' => $data['putCall'],
+                'share' => $data['share'],
+                'sharedVoting' => $data['sharedVoting'],
+                'soleVoting' => $data['soleVoting'],
+                'value' => $data['value']
+            ]
+        );
+    }
+}

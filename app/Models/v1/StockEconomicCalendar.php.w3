@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Models\v1;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class StockEconomicCalendar extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'stock_economic_calendar';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'actual',
+        'country',
+        'estimate',
+        'event',
+        'impact',
+        'prev',
+        'econ_time',
+        'created_at',
+        'unit'
+    ];
+
+    /**
+     * Insert or update stock Economic calendar at stock_economic_calendar table.
+     *
+     * @param array $data
+     * @return bool
+     */
+    public static function updateStockEconomicCalendar(array $data): bool
+    {       
+        return (bool) self::updateOrCreate(
+            [
+                'actual' => $data['actual'],
+                'estimate' => $data['estimate'],
+                'event' => $data['event'],
+                'impact' => $data['impact'],
+                'econ_time' => $data['time']
+            ],
+            [
+                'actual' => $data['actual'],
+                'country' => $data['country'],
+                'estimate' => $data['estimate'],
+                'event' => $data['event'],
+                'impact' => $data['impact'],
+                'prev' => $data['prev'],
+                'econ_time' => $data['time'],
+                'unit' => $data['unit']
+            ]
+        );
+    }
+
+    public static function getEconomicCalendarByStockId(int $stockId)
+    {
+        return self::where('stock_id', $stockId)
+            ->select('*')
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Retrieve the first 100 records from stock_economic_calendar table with pagination.
+     *
+     * @param int $limit
+     * @param int $offset
+     * @return array
+     */
+    public static function getAllEconomicCalendar(int $limit = 50, int $offset = 0) {
+        return self::orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->offset($offset)
+            ->get()
+            ->toArray();
+    }
+}

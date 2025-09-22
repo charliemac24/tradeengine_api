@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Http\Controllers\endpoints\v1;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\v1\Stock;
+use App\Models\v1\StockUpgradeDowngrade;
+
+class StockUpgradeDowngradeController extends Controller
+{
+
+
+    /**
+     * Get all upgrade/downgrade data with pagination
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAllUpgradeDowngrades(Request $request)
+{
+    $limit = $request->query('limit', 50);
+    $offset = $request->query('offset', 0);
+    
+    $data = StockUpgradeDowngrade::getAllUpgradeDowngrades($limit, $offset);
+    return response()->json($data);
+}
+}

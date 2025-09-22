@@ -1,0 +1,167 @@
+<?php
+
+namespace App\Models\v1;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class StockBasicFinancialMetric extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'stock_basic_financials_metric';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'stock_id',
+        'ten_day_ave_trading_vol',
+        'fifty_two_week_high',
+        'fifty_two_week_low',
+        'fifty_two_week_low_date',
+        'fifty_two_price_return_daily',
+        'beta',
+        'netmargin',
+        'market_cap',
+        'enterprise_val',
+        'pettm',
+        'peannual',
+        'peexclextrattm',
+        'pbannual',
+        'pbquarterly',
+        'psannual',
+        'psttm',
+        'pfcfsharettm',
+        'pfcfshareannual',
+        'epsttm',
+        'epsannual',
+        'epsexclextraitemsannual',
+        'grossmarginttm',
+        'grossmarginannual',
+        'operatingmarginttm',
+        'operatingmarginannual',
+        'netprofitmarginttm',
+        'netprofitmarginannual',
+        'roattm',
+        'roarfy',
+        'roettm',
+        'roerfy',
+        'roittm',
+        'roiannual',
+        'currentratioannual',
+        'currentratioquarterly',
+        'quickratioannual',
+        'quickratioquarterly',
+        'totaldebt_totalequityannual',
+        'totaldebt_totalequityquarterly',
+        'longtermdebt_equityannual',
+        'longtermdebt_equityquarterly',
+        'cashflowpersharettm',
+        'cashFlowpershareannual',
+        'currentdividendyieldttm',
+        'dividendyieldindicatedannual',
+        'dividendpersharettm',
+        'dividendpershareannual',
+        'payoutratiottm',
+        'payoutratioannual',
+        'dividendgrowthrate5y',
+        'epsgrowth3y',
+        'epsgrowth5y',
+        'revenuegrowth3y',
+        'revenuegrowth5y',
+        'bookvaluesharegrowth5y',
+        'epsGrowthTTMYoy'
+    ];
+
+    /**
+     * Insert or update stock stock basic financial metric at stock_basic_financials_metric table.
+     *
+     * @param int $stockId
+     * @param array $metric
+     * @return bool
+     */
+    public static function updateStockBasicFinancialMetric(int $stockId, array $metric): bool
+    {       
+        return (bool) self::updateOrCreate(
+            ['stock_id' => $stockId], // search criteria
+            [
+                'ten_day_ave_trading_vol' => $metric['metric']['10DayAverageTradingVolume'],
+                'fifty_two_week_high' => $metric['metric']['52WeekHigh'],
+                'fifty_two_week_low' => $metric['metric']['52WeekLow'],
+                'fifty_two_week_low_date' => $metric['metric']['52WeekLowDate'],
+                'fifty_two_price_return_daily' => $metric['metric']['52WeekPriceReturnDaily'],
+                'beta' => $metric['metric']['beta'] ?? 0,
+                'netmargin' => $metric['series']['annual']['netMargin'][0]['v'] ?? 0,
+                'market_cap'=> $metric['metric']['marketCapitalization'] ?? 0,
+                'enterprise_val'=> $metric['metric']['enterpriseValue'] ?? 0,
+                'pettm'=> $metric['metric']['peTTM'] ?? 0,
+                'peannual'=> $metric['metric']['peAnnual'] ?? 0,
+                'peexclextrattm'=> $metric['metric']['peExclExtraTTM'] ?? 0,
+                'pbannual'=> $metric['metric']['pbAnnual'] ?? 0,
+                'pbquarterly'=> $metric['metric']['pbQuarterly'] ?? 0,
+                'psannual'=> $metric['metric']['psAnnual'] ?? 0,
+                'psttm'=> $metric['metric']['psTTM'] ?? 0,
+                'pfcfsharettm'=> $metric['metric']['pfcfShareTTM'] ?? 0,
+                'pfcfshareannual'=> $metric['metric']['pfcfShareAnnual'] ?? 0,
+                'epsttm'=> $metric['metric']['epsTTM'] ?? 0,
+                'epsannual'=> $metric['metric']['epsAnnual'] ?? 0,
+                'epsexclextraitemsannual'=> $metric['metric']['epsExclExtraItemsAnnual'] ?? 0,
+                'grossmarginttm'=> $metric['metric']['grossMarginTTM'] ?? 0,
+                'grossmarginannual'=> $metric['metric']['grossMarginAnnual'] ?? 0,
+                'operatingmarginttm'=> $metric['metric']['operatingMarginTTM'] ?? 0,
+                'operatingmarginannual'=> $metric['metric']['operatingMarginAnnual'] ?? 0,
+                'netprofitmarginttm'=> $metric['metric']['netProfitMarginTTM'] ?? 0,
+                'netprofitmarginannual'=> $metric['metric']['netProfitMarginAnnual'] ?? 0,
+                'roattm'=> $metric['metric']['roaTTM'] ?? 0,
+                'roarfy'=> $metric['metric']['roaRfy'] ?? 0,
+                'roettm'=> $metric['metric']['roeTTM'] ?? 0,
+                'roerfy'=> $metric['metric']['roeRfy'] ?? 0,
+                'roittm'=> $metric['metric']['roiTTM'] ?? 0,
+                'roiannual'=> $metric['metric']['roiAnnual'] ?? 0,
+                'currentratioannual'=> $metric['metric']['currentRatioAnnual'] ?? 0,
+                'currentratioquarterly'=> $metric['metric']['currentRatioQuarterly'] ?? 0,
+                'quickratioannual'=> $metric['metric']['quickRatioAnnual'] ?? 0,
+                'quickratioquarterly'=> $metric['metric']['quickRatioQuarterly'] ?? 0,
+                'totaldebt_totalequityannual'=> $metric['metric']['totalDebt/totalEquityAnnual'] ?? 0,
+                'totaldebt_totalequityquarterly'=> $metric['metric']['totalDebt/totalEquityQuarterly'] ?? 0,
+                'longtermdebt_equityannual'=> $metric['metric']['longTermDebt/equityAnnual'] ?? 0,
+                'longtermdebt_equityquarterly'=> $metric['metric']['longTermDebt/equityQuarterly'] ?? 0,
+                'cashflowpersharettm'=> $metric['metric']['cashFlowPerShareTTM'] ?? 0,
+                'cashFlowpershareannual'=> $metric['metric']['cashFlowPerShareAnnual'] ?? 0,
+                'currentdividendyieldttm'=> $metric['metric']['currentDividendYieldTTM'] ?? 0,
+                'dividendyieldindicatedannual'=> $metric['metric']['dividendYieldIndicatedAnnual'] ?? 0,
+                'dividendpersharettm'=> $metric['metric']['dividendPerShareTTM'] ?? 0,
+                'dividendpershareannual'=> $metric['metric']['dividendPerShareAnnual'] ?? 0,
+                'payoutratiottm'=> $metric['metric']['payoutRatioTTM'] ?? 0,
+                'payoutratioannual'=> $metric['metric']['payoutRatioAnnual'] ?? 0,
+                'dividendgrowthrate5y'=> $metric['metric']['dividendGrowthRate5Y'] ?? 0,
+                'epsgrowth3y'=> $metric['metric']['epsGrowth3Y'] ?? 0,
+                'epsgrowth5y'=> $metric['metric']['epsGrowth5Y'] ?? 0,
+                'revenuegrowth3y'=> $metric['metric']['revenueGrowth3Y'] ?? 0,
+                'revenuegrowth5y'=> $metric['metric']['revenueGrowth5Y'] ?? 0,
+                'bookvaluesharegrowth5y'=> $metric['metric']['bookValueShareGrowth5Y'] ?? 0,
+                'epsGrowthTTMYoy'=> $metric['metric']['epsGrowthTTMYoy'] ?? 0
+            ]
+        );
+    }
+
+    /**
+     * Retrieve data from the stock_basic_financials_metric table where stock_id is equal to the given parameter.
+     *
+     * @param int $stockId
+     * @return \Illuminate\Database\Eloquent\Collection|static[]
+     */
+    public static function getBasicFinancialMetricByStockId(int $stockId)
+    {
+        return self::where('stock_id', $stockId)->get();
+    }
+
+}

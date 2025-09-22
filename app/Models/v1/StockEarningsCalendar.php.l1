@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models\v1;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class StockEarningsCalendar extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'stock_earnings_calendar';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'stock_id',
+        'cal_date',
+        'eps_actual',
+        'eps_estimate',
+        'hour',
+        'quarter',
+        'revenue_actual',
+        'revenue_estimate',
+        'symbol',
+        'cal_year'
+    ];
+
+    /**
+     * Insert or update stock earnings calendar at stock_earnings_calendar table.
+     *
+     * @param int $stockId
+     * @param array $data
+     * @return bool
+     */
+    public static function updateStockEarningsCalendar(int $stockId, array $data): bool
+    {       
+        return (bool) self::updateOrCreate(
+            [
+                'stock_id' => $stockId,
+                'cal_date' => $data['date'],
+                'cal_year' => $data['year'],
+                'eps_actual' => $data['epsActual'],
+                'symbol' => $data['symbol']
+            ],
+            [
+                'eps_actual' => $data['epsActual'],
+                'eps_estimate' => $data['epsEstimate'],
+                'hour' => $data['hour'],
+                'quarter' => $data['quarter'],
+                'revenue_actual' => $data['revenueActual'],
+                'revenue_estimate' => $data['revenueEstimate'],
+                'symbol' => $data['symbol'],
+                'cal_year' => $data['year']
+            ]
+        );
+    }
+}

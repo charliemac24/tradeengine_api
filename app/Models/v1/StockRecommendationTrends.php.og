@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Models\v1;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class StockRecommendationTrends extends Model
+{
+    use HasFactory;
+
+    public $timestamps = false;
+
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'stock_recommendation_trends';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'stock_id',
+        'buy',
+        'hold',
+        'period',
+        'sell',
+        'strongBuy',
+        'strongSell'
+    ];
+
+    /**
+     * Insert or update stock recommendation trends at stock_recommendation_trends table.
+     *
+     * @param int $stockId
+     * @param array $data
+     * @return bool
+     */
+    public static function updateRecommendationTrends(int $stockId, array $data): bool
+    {
+        return (bool) self::updateOrCreate(
+            [
+                'stock_id' => $stockId,
+                'period' => $data['period']
+            ], // search criteria
+            [
+                'buy' => $data['buy'],
+                'hold' => $data['hold'],
+                'sell' => $data['sell'],
+                'strongBuy' => $data['strongBuy'],
+                'strongSell' => $data['strongSell']
+            ]
+        );
+    }
+}

@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Http\Controllers\endpoints\v1;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\v1\Stock;
+use App\Models\v1\StockEconomicCalendar;
+
+class StockEconomicCalendarController extends Controller
+{
+    
+    public function getAllEconomicCalendarBySymbol(string $symbol)
+    {
+        // Convert the symbol to uppercase
+        $symbol = strtoupper($symbol);
+
+        // Find the stock ID from the stock symbol
+        $stock = Stock::where('symbol', $symbol)->first();
+
+        if ($stock) {
+            $data = StockEconomicCalendar::getEconomicCalendarByStockId($stock->id);
+            return response()->json($data);
+        } else {
+            return response()->json(['error' => 'Stock symbol not found'], 404);
+        }
+    }
+    public function getAllEconomicCalendar()
+    {
+        $data = StockEconomicCalendar::getAllEconomicCalendar(50,0);
+        return response()->json($data);
+        //return ['hello'];
+    }
+}
