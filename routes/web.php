@@ -509,26 +509,26 @@ echo "Current UTC Time: " . gmdate("Y-m-d H:i:s T") . "<br>";
 // Reworked combined trigger: lock (set flags to 1), run command, then reset flags back to 0
 Route::get('/v1/trigger-all-batches', function () {
     $commands = [
-        //'stocks:fundamentals',
-        //'stocks:fundamentals_p2',
-        //'stocks:indicators_batch1',
-        //'stocks:candles',
-        //'stocks:historical-indicators',
-        //'stocks:earnings_calendar',
-        //'stocks:trading_score',
+        'stocks:fundamentals',
+        'stocks:fundamentals_p2',
+        'stocks:indicators_batch1',
+        'stocks:candles',
+        'stocks:historical-indicators',
+        'stocks:earnings_calendar',
+        'stocks:trading_score',
         'stocks:company_news',
     ];
 
     // Map each artisan command to its processed_* column
     $flagMap = [
-        //'stocks:fundamentals'          => 'processed_fundamentals',
-        //'stocks:fundamentals_p2'       => 'processed_fundamentals_p2',
-       // //'stocks:indicators_batch1'     => 'processed_indicator_non_hist',
-       // 'stocks:candles'               => 'processed_candles',
-       // 'stocks:historical-indicators' => 'processed_indicator',
-        //'stocks:earnings_calendar'     => 'processed_earnings_cal',
-       // 'stocks:trading_score'         => 'processed_score',
-        'stocks:company_news'          => 'processed_company_news',
+        'stocks:fundamentals'          => 'processed_fundamentals',
+        'stocks:fundamentals_p2'       => 'processed_fundamentals_p2',
+        'stocks:indicators_batch1'     => 'processed_indicator_non_hist',
+        'stocks:candles'               => 'processed_candles',
+        //'stocks:historical-indicators' => 'processed_indicator',
+        'stocks:earnings_calendar'     => 'processed_earnings_cal',
+        'stocks:trading_score'         => 'processed_score',
+        //'stocks:company_news'          => 'processed_company_news',
     ];
 
     $results = [];
