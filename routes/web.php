@@ -433,6 +433,7 @@ Route::get('/v1/trigger-candles', function () {
     return response('Stocks candles triggered', 200);
 });
 Route::get('/v1/trigger-earnings-calendar', function () {
+    // call to the command
     Artisan::call('stocks:earnings_calendar');
     return response('Stocks earnings calendar triggered', 200);
 });
