@@ -20,7 +20,7 @@ class ProcessStockCandles extends Command
      *
      * @var string
      */
-    protected $description = 'Process stock candles in batches using concurrent API calls.';
+    protected $description = 'Process stock candles (stocks_commands) only where candles=0, cycling flags each run.';
 
     /**
      * List of API endpoints that will be called concurrently for each stock symbol.
@@ -42,6 +42,11 @@ class ProcessStockCandles extends Command
     protected int $maxPerRun = 2000;
 
     /**
+     * Table name for stock commands.
+     */
+    protected string $table = 'stocks_commands';
+
+    /**
      * Execute the console command.
      *
      * This method retrieves up to $maxPerRun stock symbols, splits them into chunks
@@ -53,11 +58,23 @@ class ProcessStockCandles extends Command
      */
     public function handle(): int
     {
+        // Start of cycle: if no pending (candles=0), reset all to 0 so a new full pass begins.
+        if (!DB::table($this->table)->where('candles', 0)->exists()) {
+            DB::table($this->table)->update(['candles' => 0]);
+            $this->info('No pending symbols. Reset all candles to 0 (new cycle started).');
+        }
+
         // Fetch up to the configured maximum for this run
         $symbols = $this->getStockSymbols($this->maxPerRun);
 
+        if (empty($symbols)) {
+            $this->info('No symbols to process after reset. Exiting.');
+            return 0;
+        }
+
         // Chunk into groups to respect rate limit
         $chunks = array_chunk($symbols, $this->rateLimit);
+        $totalSuccess = 0;
 
         foreach ($chunks as $chunk) {
 
@@ -72,9 +89,10 @@ class ProcessStockCandles extends Command
                 }
             }
 
+            $responses = [];
             // Fire concurrent requests. Failures are ignored.
             try {
-                Http::pool(fn ($pool) =>
+                $responses = Http::pool(fn ($pool) =>
                     collect($requests)->map(fn ($req) =>
                         $pool->retry(3, 2000)->get($req['endpoint'], ['symbol' => $req['symbol']])
                     )->toArray()
@@ -83,11 +101,35 @@ class ProcessStockCandles extends Command
                 // Intentionally ignore network/response errors to avoid blocking processing.
             }
 
+            // Determine successful symbols (any 200+ success for that symbol counts)
+            $successfulSymbols = [];
+            foreach ($responses as $idx => $response) {
+                if (isset($requests[$idx]) && $response && method_exists($response, 'successful') && $response->successful()) {
+                    $successfulSymbols[] = $requests[$idx]['symbol'];
+                }
+            }
+            $successfulSymbols = array_values(array_unique($successfulSymbols));
+
+            if ($successfulSymbols) {
+                DB::table($this->table)
+                    ->whereIn('symbol', $successfulSymbols)
+                    ->update(['candles' => 1]);
+                $totalSuccess += count($successfulSymbols);
+            }
+
             // Respect rate limit window: wait 1 second before the next batch
             usleep(1000000);
         }
 
-        $this->info(sprintf('Processed %d symbols (max per run: %d).', count($symbols), $this->maxPerRun));
+        // Per spec: force set all to 1 at end to avoid blocking even if some failed.
+        DB::table($this->table)->update(['candles' => 1]);
+
+        $this->info(sprintf(
+            'Processed %d symbols (successfully flagged this run: %d, max per run: %d). All candles now set to 1.',
+            count($symbols),
+            $totalSuccess,
+            $this->maxPerRun
+        ));
 
         return 0;
     }
@@ -100,11 +142,10 @@ class ProcessStockCandles extends Command
      */
     protected function getStockSymbols(int $limit = 2000): array
     {
-        // NOTE: removed filtering by processed_candles / notpriority so this will
-        // return the first $limit symbols ordered by id regardless of flags.
-        return DB::table('stocks_by_market_cap')
+        return DB::table($this->table)
+            ->where('candles', 0)
             ->orderBy('id', 'asc')
-            ->take($limit)
+            ->limit($limit)
             ->pluck('symbol')
             ->toArray();
     }

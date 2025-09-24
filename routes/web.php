@@ -386,9 +386,6 @@ Route::get('/v1/stocks/negative-market-cap', function () {
         ->select('stock_symbol_info.*', 'stock_symbols.symbol as stock_name')
         ->get();
 
-    echo '<pre>';
-    print_r($stocks);
-    echo '</pre>';
 });
 
 /**
@@ -397,10 +394,16 @@ Route::get('/v1/stocks/negative-market-cap', function () {
  * ──────────────────────────────────────────────────────────────────────────────
  */
 
-Route::get('/v1/trigger-process-stock-fundamentals', function () {
+Route::get('/v1/trigger-cron_fundamentals', function () {
     Artisan::call('stocks:fundamentals');
     return response('Stocks process fundamentals triggered', 200);
 });
+
+Route::get('/v1/trigger-cron_insider-sentiment', function () {
+    Artisan::call('stocks:insider_sentiment');
+    return response('Stocks process insider_sentiment triggered', 200);
+});
+
 
 // Separate explicit artisan endpoint for only the fundamentals command
 Route::get('/v1/trigger-fundamentals-only', function () {
@@ -408,37 +411,37 @@ Route::get('/v1/trigger-fundamentals-only', function () {
     return response('Stocks fundamentals (separate endpoint) triggered', 200);
 });
 
-Route::get('/v1/trigger-process-stock-fundamentals-p2', function () {
+Route::get('/v1/trigger-cron_fundamentals-p2', function () {
     Artisan::call('stocks:fundamentals_p2');
     return response('Stocks process fundamentals triggered', 200);
 });
-Route::get('/v1/trigger-indicators-batch1', function () {
-    Artisan::call('stocks:indicators_batch1');
+Route::get('/v1/trigger-cron_indicators-batch1', function () {
+    Artisan::call('stocks:indicator_non_historical_p1');
     return response('Stocks indicators batch 1 triggered', 200);
 });
-Route::get('/v1/trigger-indicators-batch2', function () {
-    Artisan::call('stocks:indicators_batch2');
+Route::get('/v1/trigger-cron_indicators-batch2', function () {
+    Artisan::call('stocks:indicator_non_historical_p2');
     return response('Stocks indicators batch 2 triggered', 200);
 });
-Route::get('/v1/trigger-trading-score', function () {
+Route::get('/v1/trigger-cron_trading-score', function () {
     Artisan::call('stocks:trading_score');
     return response('Stocks trading score triggered', 200);
 });
-Route::get('/v1/trigger-historical-indicators', function () {
-    Artisan::call('stocks:historical-indicators');
+Route::get('/v1/trigger-cron_historical-indicators', function () {
+    Artisan::call('stocks:indicator_historical');
     return response('Stocks historical indicators triggered', 200);
 });
-Route::get('/v1/trigger-candles', function () {
+Route::get('/v1/trigger-cron_candles', function () {
     Artisan::call('stocks:candles');
     return response('Stocks candles triggered', 200);
 });
-Route::get('/v1/trigger-earnings-calendar', function () {
+Route::get('/v1/trigger-cron_earnings-calendar', function () {
     // call to the command
     Artisan::call('stocks:earnings_calendar');
     return response('Stocks earnings calendar triggered', 200);
 });
 
-Route::get('/v1/trigger-company-news', function () {
+Route::get('/v1/trigger-cron_company-news', function () {
     Artisan::call('stocks:company_news');
     return response('Stocks company news triggered', 200);
 });
