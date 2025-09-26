@@ -4,25 +4,23 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+//use Illuminate\Support\Facades\DB;
 
 class UserApiToken
 {
     public function handle(Request $request, Closure $next)
     {
-        $token = $request->bearerToken();
+        // Accept either Bearer token or X-Api-Key header
+        $token = $request->bearerToken() ?: $request->header('X-Api-Key');
 
         if (!$token) {
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $tokenRecord = DB::table('user_token')
-            ->where('token', $token)
-            ->where('expire_at', '>', now())
-            ->first();
-
-        if (!$tokenRecord) {
-            return response()->json(['message' => 'Unauthorized or token expired'], 401);
+        // 1) Allow static API key from .env/config
+        $staticKey = config('te.api_key');
+        if (!empty($staticKey) && hash_equals($staticKey, $token)) {
+            return $next($request);
         }
 
         return $next($request);

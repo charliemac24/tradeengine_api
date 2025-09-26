@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Http\Request; // add this
+use Carbon\Carbon;           // add this
 
 /**
  * Controllers
@@ -577,4 +579,45 @@ Route::get('/v1/trigger-all-batches', function () {
         '</pre>';
 
     return response($html, 200)->header('Content-Type', 'text/html');
+});
+
+// NEW: Scoring by stock and days_back
+Route::get('/v1/scoring_by_stock', function (Request $request) {
+    $symbol = strtoupper((string) $request->query('symbol', ''));
+    if ($symbol === '') {
+        return response()->json(['error' => 'symbol is required'], 422);
+    }
+
+    $daysBack = (int) $request->query('days_back', 30);
+    $daysBack = max(1, min($daysBack, 365)); // clamp 1..365
+
+    $from = Carbon::now()->subDays($daysBack);
+
+    $scores = DB::table('stock_trading_score')
+        ->join('stock_symbols', 'stock_trading_score.symbol', '=', 'stock_symbols.symbol')
+        ->where('stock_trading_score.symbol', $symbol)
+        ->where('stock_trading_score.date_updated', '>=', $from)
+        // Latest close price (like /v1/scoring)
+        ->leftJoin(DB::raw('(
+            SELECT stock_id, close_price, ts
+            FROM (
+                SELECT stock_id, close_price, ts,
+                       ROW_NUMBER() OVER (PARTITION BY stock_id ORDER BY ts DESC) as rn
+                FROM stock_candle_daily
+            ) t WHERE t.rn = 1
+        ) as latest_candle'), 'stock_symbols.id', '=', 'latest_candle.stock_id')
+        // Latest percentage (like /v1/scoring)
+        ->leftJoin(DB::raw('(
+            SELECT stock_id, percentage, closing_date
+            FROM (
+                SELECT stock_id, percentage, closing_date,
+                       ROW_NUMBER() OVER (PARTITION BY stock_id ORDER BY closing_date DESC) as rn
+                FROM stock_percentage_daily
+            ) t WHERE t.rn = 1
+        ) as latest_percentage'), 'stock_symbols.id', '=', 'latest_percentage.stock_id')
+        ->select('stock_trading_score.*', 'latest_candle.close_price', 'latest_percentage.percentage')
+        ->orderBy('stock_trading_score.date_updated', 'desc')
+        ->get();
+
+    return response()->json($scores);
 });

@@ -1,0 +1,3 @@
+[25-Sep-2025 16:27:05 UTC] PHP Fatal error:  Maximum execution time of 60 seconds exceeded in /home/trendsee/api.trendseekermax.com/vendor/guzzlehttp/promises/src/Promise.php on line 188
+[25-Sep-2025 16:35:08 UTC] PHP Fatal error:  Maximum execution time of 60 seconds exceeded in /home/trendsee/api.trendseekermax.com/vendor/guzzlehttp/guzzle/src/Handler/CurlMultiHandler.php on line 175
+[25-Sep-2025 17:01:02 UTC] PHP Fatal error:  Maximum execution time of 60 seconds exceeded in /home/trendsee/api.trendseekermax.com/vendor/guzzlehttp/guzzle/src/Handler/CurlMultiHandler.php on line 175
