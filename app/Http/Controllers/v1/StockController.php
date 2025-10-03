@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\v1\Stock;
 use App\Models\v1\StockInfo;
 use App\Models\v1\StockMarketCap;
@@ -195,7 +196,7 @@ class StockController extends Controller
         $response = $this->makeApiRequest($endpoint, $params);
 
         if ($response) {
-            //$this->saveProcessStockMarketCap($response, $symbol);
+            $this->saveProcessStockMarketCap($response, $symbol);
         }
     }
     
@@ -207,15 +208,8 @@ class StockController extends Controller
      */
     public function getStockMarketCapBatch(Request $request): void
     {
-        //$timer = new ExecutionTimer();
-        //$timer->start();
-
         $symbol = $request->input('symbol');
         $this->getStockMarketCap($symbol);
-
-        //$timer->stop();
-        //$executionTime = $timer->getExecutionTime();
-        //\Log::info("Execution time for getStockMarketCapBatch: {$executionTime} seconds");
     }
 
     /**
@@ -339,12 +333,121 @@ class StockController extends Controller
             $response = $this->makeApiRequest($endpoint, $params);
     
             if ($response) {
-                //$this->saveProcessStockMarketCap($response, $symbol);
+                $this->saveProcessStockMarketCap($response, $symbol);
             }
             
             if($idx == 100) {
                 sleep(60);
             }
+        }
+    }
+
+    /**
+     * Update the stocks_by_market_cap table with the top 2000 stocks based on market cap.
+     * Replaces all existing content in the table with the current top 2000 stocks.
+     *
+     * @return \Illuminate\Http\JsonResponse A JSON response indicating success or failure.
+     */
+    public function updateTop2000StocksByMarketCap(): \Illuminate\Http\JsonResponse
+    {
+        try {
+            // Step 1: Retrieve stock symbols from stock_symbol_info ordered by market_cap (highest to lowest)
+            $topStocks = DB::table('stock_symbols')
+                ->join('stock_symbol_info', 'stock_symbols.id', '=', 'stock_symbol_info.stock_id')
+                ->select('stock_symbols.symbol', 'stock_symbol_info.market_cap')
+                ->whereNotNull('stock_symbol_info.market_cap')
+                ->where('stock_symbol_info.market_cap', '>', 0) // Only include stocks with positive market cap
+                ->orderBy('stock_symbol_info.market_cap', 'desc')
+                ->limit(2000) // Step 2: Cut the result to 2000 items only
+                ->get();
+
+            if ($topStocks->isEmpty()) {
+                return response()->json([
+                    'error' => 'No stocks found with valid market cap data',
+                    'message' => 'The stock_symbol_info table contains no stocks with positive market cap values'
+                ], 404);
+            }
+
+            // Start a database transaction for data consistency
+            DB::beginTransaction();
+
+            // Step 3: Update existing records in stocks_by_market_cap table instead of truncating
+            $rank = 1;
+            $idx = 1; // Start from 1 since IDs typically start from 1
+            $updatedRecords = 0;
+            
+            foreach ($topStocks as $stock) {
+                // Update the record where id = $idx
+                $updated = DB::table('stocks_by_market_cap')
+                    ->where('id', $idx)
+                    ->update([
+                        'symbol' => $stock->symbol,
+                        'market_cap' => $stock->market_cap,
+                        'rank' => $rank,
+                        'processed' => 1,
+                        'updated_at' => now(),
+                    ]);
+                
+                if ($updated) {
+                    $updatedRecords++;
+                }
+                
+                $rank++;
+                $idx++;
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            // Prepare summary statistics
+            $totalStocksProcessed = count($topStocks);
+            $highestMarketCap = $topStocks->first()->market_cap;
+            $lowestMarketCap = $topStocks->last()->market_cap;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully updated top 2000 stocks by market cap',
+                'data' => [
+                    'total_stocks_processed' => $totalStocksProcessed,
+                    'total_records_updated' => $updatedRecords,
+                    'highest_market_cap' => $highestMarketCap,
+                    'lowest_market_cap' => $lowestMarketCap,
+                    'highest_market_cap_symbol' => $topStocks->first()->symbol,
+                    'lowest_market_cap_symbol' => $topStocks->last()->symbol,
+                    'updated_at' => now()->toDateTimeString()
+                ],
+                'sample_data' => [
+                    'top_5' => $topStocks->take(5)->map(function($stock, $index) {
+                        return [
+                            'rank' => $index + 1,
+                            'symbol' => $stock->symbol,
+                            'market_cap' => $stock->market_cap
+                        ];
+                    }),
+                    'bottom_5' => $topStocks->slice(-5)->map(function($stock, $index) use ($totalStocksProcessed) {
+                        return [
+                            'rank' => $totalStocksProcessed - 4 + $index,
+                            'symbol' => $stock->symbol,
+                            'market_cap' => $stock->market_cap
+                        ];
+                    })->values()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            // Rollback the transaction in case of error
+            DB::rollback();
+            
+            Log::error('Failed to update top 2000 stocks by market cap: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to update stocks by market cap',
+                'message' => $e->getMessage(),
+                'timestamp' => now()->toDateTimeString()
+            ], 500);
         }
     }
 }

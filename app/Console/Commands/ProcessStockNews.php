@@ -67,7 +67,10 @@ class ProcessStockNews extends Command
 
         // Fetch up to the configured maximum for this run
         $symbols = $this->getStockSymbols($this->maxPerRun);
-
+        echo "<pre>";
+        print_r($symbols);
+        echo "</pre>";
+        die();
         if (empty($symbols)) {
             $this->info('No symbols to process after reset. Exiting.');
             return 0;
@@ -93,11 +96,15 @@ class ProcessStockNews extends Command
             $responses = [];
             // Fire concurrent requests. Failures are ignored.
             try {
-                $responses = Http::pool(fn ($pool) =>
-                    collect($requests)->map(fn ($req) =>
-                        $pool->retry(3, 2000)->get($req['endpoint'], ['symbol' => $req['symbol']])
-                    )->toArray()
-                );
+                foreach($requests as $req){
+                    echo $req['endpoint'] . '?' . http_build_query(['symbol' => $req['symbol']]) . "<br>";
+                }
+                //echo $req['endpoint'] . '?' . http_build_query(['symbol' => $req['symbol']]) . "<br>";
+                //$responses = Http::pool(fn ($pool) =>
+                //    collect($requests)->map(fn ($req) =>
+                //        $pool->retry(3, 2000)->get($req['endpoint'], ['symbol' => $req['symbol']])
+                //    )->toArray()
+                //);
             } catch (\Throwable $e) {
                 // Intentionally ignore network/response errors to avoid blocking processing.
             }
@@ -112,16 +119,16 @@ class ProcessStockNews extends Command
             $successfulSymbols = array_values(array_unique($successfulSymbols));
 
             if ($successfulSymbols) {
-                DB::table($this->table)
-                    ->whereIn('symbol', $successfulSymbols)
-                    ->update(['company_news' => 1]);
-                $totalSuccess += count($successfulSymbols);
+                //DB::table($this->table)
+                //    ->whereIn('symbol', $successfulSymbols)
+                //    ->update(['company_news' => 1]);
+                //$totalSuccess += count($successfulSymbols);
             }
 
             // Respect rate limit window: wait 1 second before the next batch
             usleep(1000000);
         }
-
+        die();
         // Per spec: force set all to 1 at end to avoid blocking even if some failed.
         DB::table($this->table)->update(['company_news' => 1]);
 

@@ -91,4 +91,105 @@ class StockUpgradeDowngradeController extends Controller
             ], 500);
         }
     }
+
+    public function getUpgradeDowngradeBySymbol7Days(string $symbol)
+        {
+            try {
+                // 1) Resolve stock by symbol
+                $stock = Stock::where('symbol', strtoupper($symbol))->first();
+                if (!$stock) {
+                    return response()->json([
+                        'error'   => 'Stock not found',
+                        'message' => "No stock found with symbol: {$symbol}",
+                    ], 404);
+                }
+
+                // 2) Compute 7-day window: today (end of day) back to 6 days ago (start of day)
+                $end   = Carbon::today()->endOfDay();
+                $start = Carbon::today()->subDays(6)->startOfDay(); // inclusive 7 days: today + previous 6
+
+                // 3) Fetch last 7 days
+                $recent = StockUpgradeDowngrade::query()
+                    ->where('stock_id', $stock->id)
+                    ->whereBetween('grade_time', [$start, $end])
+                    ->orderBy('grade_time', 'desc')
+                    ->get([
+                        'id',
+                        'stock_id',
+                        'grade_time',
+                        'company',
+                        'from_grade',
+                        'to_grade',
+                        'action',
+                        'created_at',
+                        'updated_at',
+                    ]);
+
+                // 4) Fallback: if no rows in last 7 days, return the latest one
+                if ($recent->isEmpty()) {
+                    $latest = StockUpgradeDowngrade::query()
+                        ->where('stock_id', $stock->id)
+                        ->orderBy('grade_time', 'desc')
+                        ->limit(1)
+                        ->get([
+                            'id',
+                            'stock_id',
+                            'grade_time',
+                            'company',
+                            'from_grade',
+                            'to_grade',
+                            'action',
+                            'created_at',
+                            'updated_at',
+                        ]);
+
+                    // Format the same as recent (array of rows)
+                    return response()->json([
+                        'symbol' => $stock->symbol,
+                        'range'  => [
+                            'type'  => 'fallback_latest',
+                            'start' => null,
+                            'end'   => null,
+                        ],
+                        'data'   => $latest->map(function ($row) use ($stock) {
+                            return [
+                                'symbol'     => $stock->symbol,
+                                'date'       => Carbon::parse($row->grade_time)->toDateString(),
+                                'firm'       => $row->company,
+                                'from_grade' => $row->from_grade,
+                                'to_grade'   => $row->to_grade,
+                                'action'     => $row->action,
+                            ];
+                        })->values(),
+                    ]);
+                }
+
+                // 5) Normal return: last 7 days
+                return response()->json([
+                    'symbol' => $stock->symbol,
+                    'range'  => [
+                        'type'  => 'past_7_days',
+                        'start' => $start->toDateString(),
+                        'end'   => $end->toDateString(),
+                    ],
+                    'data'   => $recent->map(function ($row) use ($stock) {
+                        return [
+                            'symbol'     => $stock->symbol,
+                            'date'       => Carbon::parse($row->grade_time)->toDateString(),
+                            'firm'       => $row->company,
+                            'from_grade' => $row->from_grade,
+                            'to_grade'   => $row->to_grade,
+                            'action'     => $row->action,
+                        ];
+                    })->values(),
+                ]);
+
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'error'   => 'Internal server error',
+                    'message' => $e->getMessage(),
+                ], 500);
+            }
+        }
+
 }

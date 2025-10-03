@@ -1012,6 +1012,165 @@ class StockArticleReference extends Controller
     }
 
 
+    public static function getStockMetricsSingle(string $symbol): array
+    {
+        $symbols     = $symbol;
+        $from_date   = now()->subDays(100)->toDateTimeString();
+        $symbolsArray = array_map('trim', explode(',', $symbols));
+
+        //$currentMonth = date('Y-m-01');
+        $currentMonth = date('Y-01-01') === date('Y-m-01') ? date('Y-m-01') : date('Y-m-01');
+        $currentYear  = date('Y-01-01');
+        $currentDate  = date('Y-m-d');
+            $pastDate    = date('Y-m-d', strtotime('-7 days'));
+            $futureDate   = date('Y-m-d', strtotime('+7 days'));       
+
+        $query = DB::table('stock_symbols')
+        ->leftJoin('stock_basic_financials_metric', 'stock_basic_financials_metric.stock_id', '=', 'stock_symbols.id')
+        ->leftJoin('stock_price_target', 'stock_price_target.stock_id', '=', 'stock_symbols.id')
+        ->leftJoin('stock_indicators', 'stock_indicators.stock_id', '=', 'stock_symbols.id')
+        ->leftJoin('stock_trading_score', 'stock_trading_score.symbol', '=', 'stock_symbols.symbol')
+        ->leftJoin('stock_symbol_info', 'stock_symbols.id', '=', 'stock_symbol_info.stock_id')
+        ->leftJoin('stock_earnings_quality_quarterly', 'stock_earnings_quality_quarterly.stock_id', '=', 'stock_symbols.id')
+        ->leftJoin('stock_sector_metrics', 'stock_sector_metrics.sector', '=', 'stock_symbol_info.sector')
+        ->leftJoin(
+            DB::raw('(SELECT stock_id, SUM(buy) as total_buy, SUM(hold) as total_hold, SUM(sell) as total_sell, SUM(strongBuy) as total_strongBuy, SUM(strongSell) as total_strongSell 
+                      FROM stock_recommendation_trends 
+                      GROUP BY stock_id) as recommendation_totals'),
+            'recommendation_totals.stock_id',
+            '=',
+            'stock_symbols.id'
+        )
+        ->leftJoin(
+    DB::raw('(
+        SELECT
+            t1.stock_id,
+            t1.close_price,
+            t1.ts,
+            -- First price of month
+            (
+                SELECT close_price
+                FROM stock_candle_daily
+                WHERE stock_id = t1.stock_id AND ts >= "' . $currentMonth . '"
+                ORDER BY ts ASC
+                LIMIT 1
+            ) as first_price_of_month,
+            -- First price of year
+            (
+                SELECT close_price
+                FROM stock_candle_daily
+                WHERE stock_id = t1.stock_id AND ts >= "' . $currentYear . '"
+                ORDER BY ts ASC
+                LIMIT 1
+            ) as first_price_of_year
+        FROM stock_candle_daily t1
+        INNER JOIN (
+            SELECT stock_id, MAX(ts) as max_ts
+            FROM stock_candle_daily
+            GROUP BY stock_id
+        ) t2 ON t1.stock_id = t2.stock_id AND t1.ts = t2.max_ts
+    ) as candle_data'),
+    'candle_data.stock_id',
+    '=',
+    'stock_symbols.id'
+)
+
+        // Subquery for past 7 days earnings
+        ->leftJoin(
+            DB::raw('(
+                SELECT
+                    symbol,
+                    cal_date AS past_calendar_date,
+                    revenue_actual
+                FROM stock_earnings_calendar
+                WHERE cal_date BETWEEN "' . $pastDate . '" AND "' . $currentDate . '"
+                ORDER BY cal_date DESC
+            ) AS earnings_data_past'),
+            'earnings_data_past.symbol',
+            '=',
+            'stock_symbols.symbol'
+        )
+        // Subquery for next 7 days earnings
+        ->leftJoin(
+            DB::raw('(
+                SELECT
+                    symbol,
+                    cal_date AS future_calendar_date,
+                    revenue_estimate
+                FROM stock_earnings_calendar
+                WHERE cal_date BETWEEN "' . $currentDate . '" AND "' . $futureDate . '"
+                ORDER BY cal_date ASC
+            ) AS earnings_data_future'),
+            'earnings_data_future.symbol',
+            '=',
+            'stock_symbols.symbol'
+        )
+        
+        ->whereIn('stock_symbols.symbol', $symbolsArray);
+
+        $results = $query->select(
+                'stock_symbols.symbol',
+                'stock_indicators.rsi',
+                'stock_indicators.ema_50',
+                'stock_indicators.sma_50',
+                'stock_symbol_info.sector',
+                'stock_symbol_info.company_name',
+                'stock_symbol_info.market_cap',
+                'stock_basic_financials_metric.pettm',
+                'stock_basic_financials_metric.fifty_two_week_low',
+                'stock_basic_financials_metric.fifty_two_week_high',
+                'stock_basic_financials_metric.netmargin',            
+                'stock_trading_score.technical_score',
+                'stock_trading_score.fundamental_score',
+                'stock_trading_score.news_sentiment_score',
+                'stock_trading_score.analyst_score',
+                'stock_trading_score.trade_engine_score',
+                'stock_price_target.number_analysts',
+                'stock_price_target.target_high',
+                'stock_price_target.target_low',
+                'stock_price_target.target_mean',
+                'stock_price_target.target_median',
+                'stock_earnings_quality_quarterly.capitalAllocation',
+                'stock_earnings_quality_quarterly.growth',
+                'stock_earnings_quality_quarterly.letterScore',
+                'stock_earnings_quality_quarterly.leverage',
+                'stock_earnings_quality_quarterly.profitability',
+                'stock_earnings_quality_quarterly.score AS earnings_quality_score',
+                'recommendation_totals.total_buy',
+                'recommendation_totals.total_hold',
+                'recommendation_totals.total_sell',
+                'recommendation_totals.total_strongBuy',
+                'recommendation_totals.total_strongSell',
+                'stock_sector_metrics.peTTM AS sector_peTTM',
+                'stock_sector_metrics.revenueGrowthQuarterlyYoy AS sector_revenueGrowthQuarterlyYoy',
+                'stock_sector_metrics.payoutRatioTTM AS sector_payoutRatioTTM',
+                'candle_data.close_price',
+                'candle_data.first_price_of_month',
+                'candle_data.first_price_of_year',
+                DB::raw('(candle_data.close_price - candle_data.first_price_of_month) as price_difference_month'),
+                DB::raw('(candle_data.close_price - candle_data.first_price_of_year) as price_difference_year'),
+                // upcoming earnings flag + estimate
+                DB::raw('CASE
+                                WHEN earnings_data_future.future_calendar_date BETWEEN "' . $currentDate . '" AND "' . $futureDate . '"
+                                THEN "yes" ELSE "no"
+                            END AS has_earnings_within_7_days'),
+                 DB::raw('CASE
+                                WHEN earnings_data_past.past_calendar_date BETWEEN "' . $currentDate . '" AND "' . $pastDate . '"
+                                THEN "yes" ELSE "no"
+                            END AS had_earnings_within_7_days'),
+
+                'earnings_data_past.past_calendar_date',
+                'earnings_data_past.revenue_actual',
+                'earnings_data_future.future_calendar_date',
+                'earnings_data_future.revenue_estimate',
+            )
+            ->get()
+            ->toArray();
+
+        return $results;
+    }
+
+
 
     public static function getAllTop100StocksByMarketCap(Request $request): array
     {

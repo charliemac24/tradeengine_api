@@ -711,5 +711,27 @@ class StockTradingScoreController extends Controller
 
         return response()->json($fundamentalData);
     }
+
+
+    public function getFundamentalPercentageSingle(string $symbol)
+    {
+        // Fetch the fundamental percentages for the given stock symbol
+        $fundamentalData = DB::table('stock_fundamental_percentage')
+            ->where('stock_symbol', $symbol)
+            ->select(
+                'valuationPercentage',
+                'growthPercentage',
+                'profitabilityPercentage',
+                'balanceSheetPercentage',
+                'earningsPercentage'
+            )
+            ->first();
+
+        if (!$fundamentalData) {
+            return response()->json(['error' => "No data found for stock symbol {$stockSymbol}"], 404);
+        }
+
+        return response()->json($fundamentalData);
+    }
 }
 

@@ -127,7 +127,7 @@ class CompanyNewsController extends Controller
             $from = date('Y-m-d', strtotime('last friday'));
         } else {
             // Other days: last 2 days
-            $from = date('Y-m-d', strtotime('-2 days'));
+            $from = date('Y-m-d', strtotime('-4 days'));
         }
         $to = date('Y-m-d');
 

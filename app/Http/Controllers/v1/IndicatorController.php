@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 // use Illuminate\Support\Facades\Log;
 use App\Models\v1\Stock;
 use App\Models\v1\StockIndicator;
-// use App\Models\v1\StockPrevIndicator; // disabled for now
+use App\Models\v1\StockPrevIndicator; // enabled for saving previous indicator data
 
 class IndicatorController extends Controller
 {
@@ -235,7 +235,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateEma50($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateEma50($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateEma50($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -255,7 +255,7 @@ class IndicatorController extends Controller
 
         if ($stock) {            
             $successLatest = StockIndicator::updateEma100($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateEma100($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateEma100($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -275,7 +275,7 @@ class IndicatorController extends Controller
 
         if ($stock) {            
             $successLatest = StockIndicator::updateEma200($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateEma200($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateEma200($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -295,7 +295,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateEma10($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateEma10($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateEma10($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -315,7 +315,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateSma10($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateSma10($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateSma10($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -335,7 +335,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateSma20($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateSma20($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateSma20($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -355,7 +355,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateSma50($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateSma50($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateSma50($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -375,7 +375,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateSma200($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateSma200($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateSma200($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -395,7 +395,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateSma100($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateSma100($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateSma100($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -415,7 +415,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateMacd($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateMacd($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateMacd($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -435,7 +435,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateMacdSignalLine($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateMacdSignalLine($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateMacdSignalLine($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);            
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -455,7 +455,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateMacdHist($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateMacdHist($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateMacdHist($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -475,7 +475,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateRsi($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateRsi($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateRsi($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -495,7 +495,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateLowerb($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateLowerb($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateLowerb($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -515,7 +515,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateAroonUp($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateAroonUp($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateAroonUp($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -535,7 +535,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateAroonDown($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateAroonDown($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateAroonDown($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -555,7 +555,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateCci($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateCci($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateCci($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -575,7 +575,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updatePrice($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updatePrice($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updatePrice($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -595,7 +595,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateAdx($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateAdx($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateAdx($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -615,7 +615,7 @@ class IndicatorController extends Controller
 
         if ($stock) {
             $successLatest = StockIndicator::updateUpperband($stock->id, $request->input('latest'));
-            // $successPrev = StockPrevIndicator::updateUpperband($stock->id, $request->input('previous'));
+            $successPrev = StockPrevIndicator::updateUpperband($stock->id, $request->input('previous'));
             return response()->json(['success' => $successLatest]);
         } else {
             return response()->json(['error' => 'Stock symbol not found'], 404);
@@ -1147,7 +1147,7 @@ class IndicatorController extends Controller
         $currentDayTimestamp = strtotime('now');
 
         // Fetch just enough data for the indicator calculation
-        $daysBack = 100; // At least 20 days for safety
+        $daysBack = $timeperiod == 200 ? 300 : 100; // At least 20 days for safety
         $params = [
             'symbol' => $symbol,
             'token' => $this->apiKey,

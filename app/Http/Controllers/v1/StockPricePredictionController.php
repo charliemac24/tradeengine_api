@@ -92,6 +92,18 @@ class StockPricePredictionController extends Controller
 
         return response()->json(['predictions' => $predictions]);
     }
+
+    public function fetchSingle(string $symbol)
+    {
+        // Optional: filter by company or model if needed
+        $query = DB::table('stock_price_prediction');
+        $query->where('stock', $symbol);
+
+        $predictions = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json(['predictions' => $predictions]);
+    }
+
     /**
      * Update the actual_price_daily field in price_prediction table
      * where next_day_prediction_date <= now, using the latest close_price

@@ -39,12 +39,12 @@ class StockMarketCap extends Model
             return;
         }
         
-        /**return (bool) self::updateOrCreate(
+        return (bool) self::updateOrCreate(
             ['stock_id' => $stockSymbolId], // search criteria
             [
                 'market_cap' => $marketCap * 1000000,
                 'company_name'=>$name
             ] // fields to be updated
-        );**/
+        );
     }
 }

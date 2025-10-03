@@ -99,10 +99,12 @@ class StockCandleController extends Controller
 
         // Use Carbon for date calculation
         $today = \Carbon\Carbon::now();
-        $from = $today->copy()->subDays($today->isMonday() ? 4 : 3)->startOfDay()->timestamp;
+        $from = $today->copy()->subDays($today->isMonday() ? 4 : 1)->startOfDay()->timestamp;
 
         $response = $this->fetchStockCandleStickFromAPI($symbol, $resolution, $from);
-
+        echo "<pre>";
+        print_r($response);
+        echo "</pre>";
         if ($response && isset($response['s']) && $response['s'] === 'ok') {
             $this->processAndSaveCandleSticks($symbol, $response, 'daily');
             $this->processAndSavePercentage($symbol, $response, 'daily');
@@ -253,7 +255,7 @@ class StockCandleController extends Controller
             'to' => $to,
             'resolution' => $resolution
         ];
-        echo $this->apiBaseUrl.$endpoint.'?'.http_build_query($params);
+        //echo $this->apiBaseUrl.$endpoint.'?'.http_build_query($params);
         return $this->makeApiRequest($endpoint, $params);
     }
 

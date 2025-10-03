@@ -409,6 +409,50 @@ class UserPortfoliosController extends Controller
     }
 
     /**
+     * Get the current price and market cap for a specific stock by symbol.
+     *
+     * @param string $symbol The symbol of the stock.
+     * @return array|null An array containing current_price and market_cap, or null if not found.
+     */
+    public function getCurrentPriceAndMarketCapData(string $symbol): ?array
+    {
+        $stockData = DB::table('stock_quote')
+            ->join('stock_symbol_info', 'stock_quote.stock_id', '=', 'stock_symbol_info.stock_id')
+            ->join('stock_symbols', 'stock_quote.stock_id', '=', 'stock_symbols.id')
+            ->where('stock_symbols.symbol', $symbol)
+            ->select('stock_quote.current_price', 'stock_symbol_info.market_cap', 'stock_symbols.symbol')
+            ->orderBy('stock_quote.updated_at', 'desc')
+            ->first();
+
+        if (!$stockData) {
+            return null;
+        }
+
+        return [
+            'symbol' => $stockData->symbol,
+            'current_price' => $stockData->current_price,
+            'market_cap' => $stockData->market_cap
+        ];
+    }
+
+    /**
+     * Get the current price and market cap for a specific stock by symbol (Route handler).
+     *
+     * @param string $symbol The symbol of the stock from the route parameter.
+     * @return \Illuminate\Http\JsonResponse A JSON response containing symbol, current_price and market_cap.
+     */
+    public function getCurrentPriceAndMarketCap(string $symbol): \Illuminate\Http\JsonResponse
+    {
+        $stockData = $this->getCurrentPriceAndMarketCapData($symbol);
+        
+        if (!$stockData) {
+            return response()->json(['error' => 'Stock data not found for symbol: ' . $symbol], 404);
+        }
+
+        return response()->json($stockData);
+    }
+
+    /**
      * Update the daily_pl and market_cap fields for each stock in the user_stock_portfolio table.
      *
      * @return void

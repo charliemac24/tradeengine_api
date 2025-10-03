@@ -13,6 +13,7 @@ namespace App\Http\Controllers\v1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class StockInvestmentReportController extends Controller
 {
@@ -55,5 +56,45 @@ class StockInvestmentReportController extends Controller
             ->get();
 
         return response()->json(['reports' => $reports]);
+    }
+
+    public function getAnalystReportsSingle(string $symbol)
+    {      
+        $reports = DB::table('stock_investment_analyst_report')
+            ->where('symbol', $symbol)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json(['reports' => $reports]);
+    }
+
+    public function getAnalystReportsSingle7days(string $symbol)
+    {      
+        // Define 7-day window
+        $start = Carbon::today()->subDays(6)->startOfDay(); // 7 calendar days including today
+        $end   = Carbon::today()->endOfDay();
+
+        $reports = DB::table('stock_investment_analyst_report')
+            ->where('symbol', $symbol)
+            ->whereBetween('created_at', [$start, $end])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // If no records in last 7 days, fallback to latest one
+        if ($reports->isEmpty()) {
+            $reports = DB::table('stock_investment_analyst_report')
+                ->where('symbol', $symbol)
+                ->orderBy('created_at', 'desc')
+                ->limit(1)
+                ->get();
+        }
+
+        return response()->json([
+            'symbol'  => $symbol,
+            'range'   => $reports->isEmpty()
+                ? ['type' => 'fallback_latest', 'start' => null, 'end' => null]
+                : ['type' => 'past_7_days', 'start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'reports' => $reports
+        ]);
     }
 }

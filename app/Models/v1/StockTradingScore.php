@@ -22,38 +22,37 @@ class StockTradingScore extends Model
         if (!isset($data['symbol'])) {
             throw new \InvalidArgumentException('Stock symbol is required.');
         }
-        echo "<pre>";
-        print_r($data);
-        echo "</pre>";
+
         // Use updateOrCreate to either update the record or create a new one
         $record = self::updateOrCreate(
             ['symbol' => $data['symbol']], // Condition to check for an existing record
             [
-                'technical_score'       => $data['technical_score'] ?? null,
-                'fundamental_score'     => $data['fundamental_score'] ?? null,
-                'news_sentiment_score'  => $data['news_sentiment_score'] ?? null,
-                'social_sentiment_score'=> $data['social_sentiment_score'] ?? null,
-                'analyst_score'         => $data['analyst_score'] ?? null,
-                'trade_engine_score'    => $data['trade_engine_score'] ?? null,
+                'technical_score'        => $data['technical_score'] ?? null,
+                'fundamental_score'      => $data['fundamental_score'] ?? null,
+                'news_sentiment_score'   => $data['news_sentiment_score'] ?? null,
+                'social_sentiment_score' => $data['social_sentiment_score'] ?? null,
+                'analyst_score'          => $data['analyst_score'] ?? null,
+                'trade_engine_score'     => $data['trade_engine_score'] ?? null,
             ]
         );
+
+        // Always refresh date_updated
+        $record->date_updated = now();
+        $record->save();
+
         if ($record->wasRecentlyCreated) {
-    // New row inserted
-    $affected = 1;
-    $status = "inserted";
-} elseif ($record->wasChanged()) {
-    // Existing row updated with new values
-    $affected = 1;
-    $status = "updated";
-} else {
-    // No changes (values were the same)
-    $affected = 0;
-    $status = "no changes";
-}
+            $affected = 1;
+            $status   = "inserted";
+        } elseif ($record->wasChanged()) {
+            $affected = 1;
+            $status   = "updated";
+        } else {
+            // Even if no field changed, we still forced date_updated
+            $affected = 1;
+            $status   = "touched";
+        }
 
-echo $affected . " row(s) " . $status . " for symbol " . $data['symbol'] . "\n";
+        echo $affected . " row(s) " . $status . " for symbol " . $data['symbol'] . "\n";
         return $record;
-    }
-
-    
+    }    
 }

@@ -33,7 +33,6 @@ Route::middleware('\App\Http\Middleware\UserApiToken')->group(function () {
 
 
 
-
 use App\Http\Controllers\user\UserQuestionnaireController;
 
 Route::middleware('\App\Http\Middleware\UserApiToken')->group(function () {
